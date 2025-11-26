@@ -207,16 +207,22 @@ export default function SeekerDashboard() {
               <Popup>
                 <h3>{opp.title}</h3>
                 <p>{opp.location}</p>
-                                <button
-                  onClick={() => handleApply(opp.id)}
-                  disabled={appliedIds.includes(opp.id)}
+                <button
+                  onClick={() => {
+                    if (opp.url) {
+                      window.open(opp.url, '_blank', 'noopener,noreferrer');
+                    } else {
+                      handleApply(opp.id);
+                    }
+                  }}
+                  disabled={appliedIds.includes(opp.id) && !opp.url}
                   className={`mt-2 py-2 px-4 rounded-xl font-semibold transition-all duration-200 ${
-                    appliedIds.includes(opp.id)
+                    appliedIds.includes(opp.id) && !opp.url
                       ? "bg-white/20 text-gray-400 cursor-not-allowed"
                       : "bg-gradient-to-r from-[#C5A3FF] to-[#9E7BFF] text-white hover:opacity-90"
                   }`}
                 >
-                  {appliedIds.includes(opp.id) ? "Applied" : "Apply"}
+                  {opp.url ? "Apply on Site →" : (appliedIds.includes(opp.id) ? "Applied" : "Apply")}
                 </button>
               </Popup>
             </Marker>

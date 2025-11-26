@@ -1,93 +1,215 @@
 """
-Safia:
-SQLAlchemy Models: Write Python code for all database models (User, Profile, Opportunity, Application, Subscription)
-in models.py based on the provided SQL schema.
-
-Database Creation: Use SQLAlchemy's engine to create all tables in your local PostgreSQL database.
-
-This file defines the database models for the application using SQLAlchemy's ORM.
-Each class in this file corresponds to a table in the database.
+Pydantic Models/Schemas for Firebase Firestore
+These models define the structure of documents stored in Firestore
 """
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, func, Boolean, Float
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import ARRAY
-from .database import Base
-from pgvector.sqlalchemy import Vector
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, List
+from datetime import datetime
+from enum import Enum
 
-# Represents the 'users' table in the database.
-# SQLAlchemy's ORM maps this class to the table, and its attributes to the columns.
-class User(Base):
-    __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    full_name = Column(String)
-    role = Column(String, nullable=False) # CHECK (role IN ('seeker', 'provider'))
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+# Enums for type safety
+class UserRole(str, Enum):
+    SEEKER = "seeker"
+    PROVIDER = "provider"
 
-    # Relationships:
-    profile = relationship("Profile", back_populates="user", uselist=False)
-    opportunities = relationship("Opportunity", back_populates="provider")
-    applications = relationship("Application", back_populates="seeker")
-    subscription = relationship("Subscription", back_populates="user", uselist=False)
 
-class Profile(Base):
-    __tablename__ = "profiles"
+class OpportunityStatus(str, Enum):
+    OPEN = "open"
+    CLOSED = "closed"
+    COMPLETED = "completed"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    avatar_url = Column(Text)
-    bio = Column(Text)
-    skills = Column(ARRAY(Text))
-    interests = Column(ARRAY(Text))
-    company_name = Column(String)
-    company_website = Column(Text)
-    country = Column(String)
-    city = Column(String)
-    trust_score = Column(Integer)
-    verification_status = Column(String)
-    user = relationship("User", back_populates="profile")
 
-class Opportunity(Base):
-    __tablename__ = "opportunities"
+class ApplicationStatus(str, Enum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
 
-    id = Column(Integer, primary_key=True, index=True)
-    provider_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    title = Column(String, nullable=False)
-    description = Column(Text, nullable=False)
-    type = Column(String)
-    location = Column(String)
-    lat = Column(Float)
-    lng = Column(Float)
-    tags = Column(ARRAY(Text))
-    status = Column(String, default="open") # CHECK (status IN ('open', 'closed', 'completed'))
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
-    provider = relationship("User", back_populates="opportunities")
-    applications = relationship("Application", back_populates="opportunity")
-    embedding = Column(Vector(768), nullable=True)
 
-class Application(Base):
-    __tablename__ = "applications"
+class SubscriptionPlan(str, Enum):
+    EXPLORER = "Explorer"
+    NAVIGATOR = "Navigator"
+    COMMANDER = "Commander"
 
-    id = Column(Integer, primary_key=True, index=True)
-    seeker_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    opportunity_id = Column(Integer, ForeignKey("opportunities.id", ondelete="CASCADE"), nullable=False)
-    status = Column(String, default="pending") # CHECK (status IN ('pending', 'accepted', 'rejected'))
-    cover_letter = Column(Text)
-    submitted_at = Column(DateTime(timezone=True), server_default=func.now())
-    seeker = relationship("User", back_populates="applications")
-    opportunity = relationship("Opportunity", back_populates="applications")
 
-class Subscription(Base):
-    __tablename__ = "subscriptions"
+class SubscriptionStatus(str, Enum):
+    ACTIVE = "active"
+    CANCELED = "canceled"
+    PAST_DUE = "past_due"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    plan_name = Column(String, nullable=False) # CHECK (plan_name IN ('Explorer', 'Navigator', 'Commander'))
-    status = Column(String, nullable=False) # CHECK (status IN ('active', 'canceled', 'past_due'))
-    start_date = Column(DateTime(timezone=True))
-    end_date = Column(DateTime(timezone=True))
-    user = relationship("User", back_populates="subscription")
+
+class SkillLevel(str, Enum):
+    ZERO = "zero"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class JobCategory(str, Enum):
+    WORK = "Work"
+    EDUCATION = "Education"
+    HOBBIES = "Hobbies"
+    CONTRIBUTION = "Contribution"
+
+
+# User Models
+class UserBase(BaseModel):
+    email: EmailStr
+    full_name: Optional[str] = None
+    role: UserRole
+
+
+class UserCreate(UserBase):
+    password: str
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class User(UserBase):
+    id: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    class Config:
+        from_attributes = True
+
+
+# Profile Models
+class ProfileBase(BaseModel):
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    skills: List[str] = Field(default_factory=list)
+    interests: List[str] = Field(default_factory=list)
+    company_name: Optional[str] = None
+    company_website: Optional[str] = None
+    country: Optional[str] = None
+    city: Optional[str] = None
+    trust_score: int = 0
+    verification_status: str = "unverified"
+
+
+class ProfileCreate(ProfileBase):
+    user_id: str
+
+
+class Profile(ProfileBase):
+    id: Optional[str] = None
+    user_id: str
+    
+    class Config:
+        from_attributes = True
+
+
+# Opportunity Models
+class OpportunityBase(BaseModel):
+    title: str
+    description: str
+    type: Optional[str] = None
+    location: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    tags: List[str] = Field(default_factory=list)
+    status: OpportunityStatus = OpportunityStatus.OPEN
+
+
+class OpportunityCreate(OpportunityBase):
+    provider_id: str
+
+
+class Opportunity(OpportunityBase):
+    id: Optional[str] = None
+    provider_id: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    embedding: Optional[List[float]] = None
+    
+    class Config:
+        from_attributes = True
+
+
+# Scraped Job Models (AI-enhanced)
+class ScrapedJobBase(BaseModel):
+    title: str
+    company: Optional[str] = None
+    description: Optional[str] = None
+    url: Optional[str] = None
+    source: str
+    location: Optional[str] = None
+    scraped_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ValidatedJob(ScrapedJobBase):
+    id: Optional[str] = None
+    # Validation fields
+    is_legitimate: bool = False
+    trust_score: int = 0
+    confidence: float = 0.0
+    red_flags: List[str] = Field(default_factory=list)
+    approved: bool = False
+    
+    # Categorization fields
+    primary_category: Optional[JobCategory] = None
+    subcategory: Optional[str] = None
+    skill_level: Optional[SkillLevel] = None
+    is_immediate: bool = False
+    payment_timeframe: Optional[str] = None
+    
+    # Metadata fields
+    required_skills: List[str] = Field(default_factory=list)
+    salary_range: Optional[str] = None
+    experience_level: Optional[str] = None
+    time_commitment: Optional[str] = None
+    deadline: Optional[str] = None
+    
+    # Embedding for semantic search
+    embedding: Optional[List[float]] = None
+    validated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    class Config:
+        from_attributes = True
+
+
+# Application Models
+class ApplicationBase(BaseModel):
+    cover_letter: Optional[str] = None
+    status: ApplicationStatus = ApplicationStatus.PENDING
+
+
+class ApplicationCreate(ApplicationBase):
+    seeker_id: str
+    opportunity_id: str
+
+
+class Application(ApplicationBase):
+    id: Optional[str] = None
+    seeker_id: str
+    opportunity_id: str
+    submitted_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    class Config:
+        from_attributes = True
+
+
+# Subscription Models
+class SubscriptionBase(BaseModel):
+    plan_name: SubscriptionPlan
+    status: SubscriptionStatus
+
+
+class SubscriptionCreate(SubscriptionBase):
+    user_id: str
+    start_date: datetime = Field(default_factory=datetime.utcnow)
+    end_date: Optional[datetime] = None
+
+
+class Subscription(SubscriptionBase):
+    id: Optional[str] = None
+    user_id: str
+    start_date: datetime
+    end_date: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True

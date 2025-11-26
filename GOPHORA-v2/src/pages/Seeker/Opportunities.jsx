@@ -232,15 +232,21 @@ export default function Opportunities() {
                   <td className="py-3 px-4">{(op.tags || []).join(", ")}</td>
                   <td className="py-3 px-4">
                     <button
-                      onClick={() => handleApply(op.id)}
-                      disabled={appliedIds.includes(op.id)}
+                      onClick={() => {
+                        if (op.url) {
+                          window.open(op.url, '_blank', 'noopener,noreferrer');
+                        } else {
+                          handleApply(op.id);
+                        }
+                      }}
+                      disabled={appliedIds.includes(op.id) && !op.url}
                       className={`py-2 px-4 rounded-xl font-semibold transition-all duration-200 ${
-                        appliedIds.includes(op.id)
+                        appliedIds.includes(op.id) && !op.url
                           ? "bg-white/20 text-gray-400 cursor-not-allowed"
                           : "bg-gradient-to-r from-[#C5A3FF] to-[#9E7BFF] text-white hover:opacity-90"
                       }`}
                     >
-                      {appliedIds.includes(op.id) ? "Applied" : "Apply"}
+                      {op.url ? "Apply on Site →" : (appliedIds.includes(op.id) ? "Applied" : "Apply")}
                     </button>
                   </td>
                 </tr>

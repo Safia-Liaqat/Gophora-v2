@@ -63,6 +63,12 @@ export default function SeekerLayout() {
               Browse Opportunities
             </Link>
             <Link
+              to="/chat"
+              className="text-gray-300 hover:text-[#C5A3FF] font-medium transition-all duration-200 flex items-center gap-2"
+            >
+              🤖 AI Chat Assistant
+            </Link>
+            <Link
               to="/seeker/applications"
               className="text-gray-300 hover:text-[#C5A3FF] font-medium transition-all duration-200"
             >

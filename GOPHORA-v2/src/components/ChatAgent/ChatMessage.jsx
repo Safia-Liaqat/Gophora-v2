@@ -6,22 +6,23 @@ import { useNavigate } from "react-router-dom"; // <-- IMPORTED NAVIGATE
  * OpportunityCard (The "Box")
  */
 function OpportunityCard({ opp }) {
-  const navigate = useNavigate(); // <-- INITIALIZED NAVIGATE
+  const navigate = useNavigate();
 
-  // --- NEW HANDLER FUNCTION ---
   const handleApplyClick = () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      // User is logged out, save the ID and redirect
-      localStorage.setItem("pending_application_id", opp.id);
-      navigate("/login");
+    // If job has source_url, redirect to original job posting
+    if (opp.source_url) {
+      window.open(opp.source_url, '_blank', 'noopener,noreferrer');
     } else {
-      // User is logged in, send them to the main "Opportunities" page
-      // where they can manage applications.
-      navigate("/seeker/opportunities");
+      // Fallback: navigate to opportunities page
+      const token = localStorage.getItem("token");
+      if (!token) {
+        localStorage.setItem("pending_application_id", opp.id);
+        navigate("/login");
+      } else {
+        navigate("/seeker/opportunities");
+      }
     }
   };
-  // --- END OF NEW FUNCTION ---
 
   return (
     <div className="bg-[#161B30]/80 border border-[#1F254A] rounded-lg p-4 mt-2 w-full max-w-sm transition-all hover:border-[#A28EFF]/50">
@@ -32,36 +33,19 @@ function OpportunityCard({ opp }) {
           <h3 className="font-semibold text-base text-white truncate">
             {opp.title}
           </h3>
-          <p className="text-xs text-gray-400">{opp.location || "Remote"}</p>
+          <p className="text-xs text-gray-400">{opp.company || "Company"} • {opp.location || "Remote"}</p>
         </div>
         <span className="text-[11px] px-2 py-0.5 rounded-full font-medium text-[#A28EFF] border border-[#A28EFF]/30 bg-[#A28EFF]/10">
-          {opp.type}
+          {opp.type || "Job"}
         </span>
       </div>
 
-      {/* Description */}
-      <p className="text-sm text-gray-300 leading-relaxed line-clamp-2 mb-3">
-        {opp.description}
-      </p>
-
-      {/* Tags */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {opp.tags && opp.tags.slice(0, 3).map((tag, i) => (
-          <span
-            key={i}
-            className="bg-[#1F254A] text-[#A28EFF] text-[11px] px-2 py-0.5 rounded-md"
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
-
-      {/* Apply Button --- UPDATED --- */}
+      {/* Apply Button */}
       <button
-        onClick={handleApplyClick} // <-- Use the new handler
-        className="bg-gradient-to-r from-[#6D5DD3] to-[#7E6DF4] hover:scale-105 transition-all text-white text-sm font-semibold py-2 rounded-lg w-full"
+        onClick={handleApplyClick}
+        className="bg-gradient-to-r from-[#6D5DD3] to-[#7E6DF4] hover:scale-105 transition-all text-white text-sm font-semibold py-2 rounded-lg w-full mt-2"
       >
-        🚀 Apply to Mission
+        {opp.source_url ? "Apply on Site →" : "🚀 Apply to Mission"}
       </button>
     </div>
   );

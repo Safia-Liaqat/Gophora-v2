@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { LogIn, LogOut, Menu, X } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import api from '../../services/api.js';
 import logo from '../../assets/gophora-plomo-logo.png'
 
 const Navbar = () => {
@@ -29,14 +30,22 @@ const Navbar = () => {
     setIsLoggedIn(!!token);
   }, []);
 
-  const handleAuthClick = () => {
+  const handleAuthClick = async () => {
     if (isLoggedIn) {
-      // Logout
+      // Logout - clear all auth data
+      try {
+        await api.post('/api/auth/logout');
+      } catch (err) {
+        console.error('Logout error:', err);
+      }
+      
       localStorage.removeItem("token");
+      localStorage.removeItem("token_expiry");
+      localStorage.removeItem("user");
+      localStorage.removeItem("role");
       setIsLoggedIn(false);
-      navigate("/"); // redirect to homepage after logout
+      navigate("/");
     } else {
-      // Navigate to login page
       navigate("/login");
     }
   };

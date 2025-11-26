@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { APIURL } from '../../services/api.js'
+import api, { APIURL } from '../../services/api.js'
 
 export default function LoginForm() {
   const [role, setRole] = useState("");
@@ -22,17 +22,11 @@ export default function LoginForm() {
     // Check if there is a pending application ID
     if (pendingAppId) {
       try {
-        const res = await fetch(`${APIURL}/api/applications/apply?opportunity_id=${pendingAppId}`, {
-          method: "POST",
+        const res = await api.post(`/api/applications/apply?opportunity_id=${pendingAppId}`, {}, {
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         });
-        
-        if (!res.ok) {
-          throw new Error("Failed to submit pending application after login.");
-        }
         
         // Success! Increment the dashboard delta count
         const key = "applicationsSentDelta";
@@ -60,32 +54,39 @@ export default function LoginForm() {
     }
 
     try {
-      const response = await fetch(`${APIURL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, username: formData.email, role }),
+      const response = await api.post('/api/auth/login', { 
+        email: formData.email, 
+        password: formData.password 
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Incorrect email or password");
+      const data = response.data;
+      
+      // Calculate expiry time (24 hours from now)
+      const expiryTime = Date.now() + (data.expires_in * 1000); // expires_in is in seconds
+      
+      // Save token, expiry time, and user data
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("token_expiry", expiryTime.toString());
+      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("role", data.user.role);
+
+      // Check if the user's role matches the selected role
+      if (data.user.role !== role) {
+        setError(`This account is registered as a ${data.user.role}. Please select the correct role.`);
+        localStorage.clear();
+        return;
       }
 
-      const data = await response.json();
-      localStorage.setItem("token", data.access_token);
-      localStorage.setItem("role", role);
-
       if (role === "seeker") {
-        // --- UPDATED: Check for pending apps before navigating ---
+        // Check for pending apps before navigating
         await handlePendingApplication(data.access_token);
         navigate("/seeker/dashboard");
-        // --- END OF UPDATE ---
       } else if (role === "provider") {
         navigate("/provider/dashboard");
       }
 
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.detail || err.message || "Incorrect email or password");
     }
   };
 

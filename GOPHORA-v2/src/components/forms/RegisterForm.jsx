@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { APIURL } from '../../services/api.js'
+import api, { APIURL } from '../../services/api.js'
 
 export default function RegisterForm({ role, setRole }) {
   const [formData, setFormData] = useState({
@@ -36,10 +36,12 @@ export default function RegisterForm({ role, setRole }) {
             cities: c.cities,
           }));
           setCountries(countryList);
+          setError(null); // Clear any previous errors
         }
       } catch (err) {
         console.error("Error fetching countries:", err);
-        setError("Unable to load countries. Please refresh.");
+        // Don't set error - just log it. Countries are optional.
+        setCountries([{ name: "Other", cities: ["Not specified"] }]);
       }
     };
     fetchCountries();
@@ -64,51 +66,72 @@ export default function RegisterForm({ role, setRole }) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ✅ Safe, production-grade submission with error handling
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // Assuming you have a state like: const [error, setError] = useState("");
-    setLoading(true); // Assuming you have a state like: const [loading, setLoading] = useState(false);
+    setError("");
+    setLoading(true);
 
-    // This payload object is the most important part.
-    // The keys (e.g., fullName, organizationName) must match exactly what your
-    // frontend form state uses, and the final keys sent in the body
-    // must match the backend's 'RegisterRequest' schema.
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
+    // Validate password length
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      setLoading(false);
+      return;
+    }
+
+    // Backend expects: email, password, full_name, role
     const payload = {
       email: formData.email,
       password: formData.password,
-      full_name: formData.fullName,
-      role: role, // 'role' is passed down as a prop
-      country: formData.country,
-      city: formData.city,
-      skills: formData.skills,
-      // This key MUST be 'organizationName' to match the backend API schema
-      organizationName: formData.organizationName,
-      website: formData.website,
+      full_name: formData.name,
+      role: role,
     };
 
     try {
-      const response = await fetch(`${APIURL}/api/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await api.post('/api/auth/register', payload);
+      const data = response.data;
+      
+      // Calculate expiry time (24 hours from now)
+      const expiryTime = Date.now() + (data.expires_in * 1000);
+      
+      // Save token, expiry, and user data to localStorage
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('token_expiry', expiryTime.toString());
+      localStorage.setItem('user', JSON.stringify(data.user));
 
-      if (!response.ok) {
-        // Get the specific error message from the backend's JSON response
-        const errorData = await response.json();
-        // The backend sends error details in a field named 'detail'
-        throw new Error(errorData.detail || "An unknown error occurred.");
+      // Update profile with additional info
+      if (formData.country || formData.city || formData.skills || formData.organizationName) {
+        try {
+          const profilePayload = {
+            country: formData.country,
+            city: formData.city,
+            skills: formData.skills ? formData.skills.split(',').map(s => s.trim()) : [],
+            company_name: formData.organizationName,
+            company_website: formData.website,
+          };
+
+          await api.put(`/api/users/${data.user.id}/profile`, profilePayload, {
+            headers: {
+              'Authorization': `Bearer ${data.access_token}`
+            }
+          });
+        } catch (profileErr) {
+          console.error("Profile update failed:", profileErr);
+          // Continue anyway - user is registered
+        }
       }
 
-      // On successful registration, you can navigate to the login page
-      navigate('/login'); // Assuming you have: const navigate = useNavigate();
+      // Navigate to appropriate dashboard
+      navigate(role === 'seeker' ? '/seeker/dashboard' : '/provider/dashboard');
 
     } catch (err) {
-      // Set the error message to display it in the UI
-      setError(err.message);
+      setError(err.response?.data?.detail || err.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -148,19 +171,18 @@ export default function RegisterForm({ role, setRole }) {
         />
       ))}
 
-      {/* Country Dropdown */}
+      {/* Country Dropdown - Optional */}
       <select
         name="country"
         value={formData.country}
         onChange={(e) =>
           setFormData({ ...formData, country: e.target.value, city: "" })
         }
-        required
         className="bg-white/5 border border-white/10 text-white placeholder-gray-400 
                    p-3 rounded-xl focus:outline-none focus:ring-2 
                    focus:ring-[#9E7BFF] transition-all duration-300"
       >
-        <option value="">Select Country</option>
+        <option value="">Select Country (Optional)</option>
         {countries.map((country) => (
           <option key={country.name} value={country.name} className="text-black">
             {country.name}
@@ -168,12 +190,11 @@ export default function RegisterForm({ role, setRole }) {
         ))}
       </select>
 
-      {/* City Dropdown */}
+      {/* City Dropdown - Optional */}
       <select
         name="city"
         value={formData.city}
         onChange={handleChange}
-        required
         disabled={!formData.country || loadingCities}
         className="bg-white/5 border border-white/10 text-white placeholder-gray-400 
                    p-3 rounded-xl focus:outline-none focus:ring-2 
@@ -183,7 +204,7 @@ export default function RegisterForm({ role, setRole }) {
           {loadingCities
             ? "Loading cities..."
             : formData.country
-            ? "Select City"
+            ? "Select City (Optional)"
             : "Select Country first"}
         </option>
         {cities.map((city) => (

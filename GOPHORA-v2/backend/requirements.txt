@@ -1,13 +1,41 @@
+# Core FastAPI
 fastapi
 uvicorn[standard]
-SQLAlchemy
-psycopg2-binary
 pydantic
+pydantic-settings
+python-dotenv
+
+# Authentication
 passlib
 argon2-cffi
 python-jose[cryptography]
-python-dotenv
+
+# Firebase
+firebase-admin
+
+# LangChain & AI Models
+langchain
+langchain-google-genai
+langchain-openai
+langchain-community
 google-generativeai
-pgvector
+
+# Web Scraping
 requests
 beautifulsoup4
+scrapy
+selenium
+lxml
+html2text
+
+# NLP & ML
+spacy
+transformers
+sentence-transformers
+
+# Task Scheduling
+apscheduler
+
+# Utilities
+python-multipart
+aiohttp

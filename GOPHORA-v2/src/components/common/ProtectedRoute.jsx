@@ -6,6 +6,7 @@ export default function ProtectedRoute({ children, allowedRole }) {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
 
+  // Simple check - if token exists, allow access
   if (!token) {
     return <Navigate to="/login" replace />;
   }

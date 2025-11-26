@@ -18,6 +18,9 @@ dist-ssr
 # Environment
 .env
 
+# Firebase credentials
+backend/firebase-credentials.json
+
 # Python
 __pycache__/
 venv/

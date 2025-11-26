@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import './App.css';
 import './index.css';
@@ -22,11 +23,51 @@ import AboutUs from './pages/Landing/About';
 import ExploreMissions from './pages/Landing/ExploreMissions';
 import MainLayout from './layouts/PublicLayout';
 import OpportunityDetails from './pages/Seeker/OpportunityDetails';
-
-
-// Other imports remain the same...
+import api from './services/api';
 
 function App() {
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    // Check if user session is still valid on app load
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const tokenExpiry = localStorage.getItem('token_expiry');
+      const user = localStorage.getItem('user');
+      
+      if (token && tokenExpiry && user) {
+        const expiryTime = parseInt(tokenExpiry);
+        const currentTime = Date.now();
+        
+        // Check if token has expired
+        if (currentTime < expiryTime) {
+          console.log('Session is still valid, user stays logged in');
+          // Token is still valid, user stays logged in
+        } else {
+          console.log('Session expired, clearing auth data');
+          // Token expired, clear everything
+          localStorage.removeItem('token');
+          localStorage.removeItem('token_expiry');
+          localStorage.removeItem('user');
+          localStorage.removeItem('role');
+        }
+      }
+      
+      setAuthChecked(true);
+    };
+
+    checkAuth();
+  }, []);
+
+  // Don't render routes until auth is checked
+  if (!authChecked) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#03091d]">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <Routes>
      <Route element={<MainLayout/>}>
