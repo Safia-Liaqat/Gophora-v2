@@ -8,12 +8,17 @@ argon2-cffi
 python-jose[cryptography]
 python-dotenv
 google-generativeai
+google-genai
 pgvector
 requests
 beautifulsoup4
+# ... other dependencies ...
+python-jose
+# ...
 
 # New dependencies for job aggregation platform
 firebase-admin
+bcrypt
 scrapy
 selenium
 webdriver-manager
@@ -24,6 +29,7 @@ openai
 redis
 apscheduler
 celery
+email-validator
 bcrypt
 fake-useragent
 python-multipart

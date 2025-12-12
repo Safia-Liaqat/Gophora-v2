@@ -1,0 +1,6 @@
+# Ignore Python virtual environment files
+**/venv/
+# Ignore Node dependencies (if applicable)
+**/node_modules/
+# Ignore local secrets
+.env

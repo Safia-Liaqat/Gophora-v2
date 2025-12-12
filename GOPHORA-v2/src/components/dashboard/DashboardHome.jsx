@@ -175,7 +175,7 @@ export default function DashboardHome() {
         <div className="flex justify-between items-start">
           <div className="space-y-2">
             <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-fuschia via-jewel to-fuschia bg-clip-text text-transparent drop-shadow-lg">
-              Welcome Back, {userName} 👋
+              Welcome Back, {userName} 
             </h1>
             <p className="text-stark/70 text-base md:text-lg">
               Your next opportunity is waiting
@@ -284,7 +284,7 @@ export default function DashboardHome() {
             <div className="space-y-6">
               <div className="flex items-center justify-between bg-gradient-to-r from-fuschia/5 to-jewel/5 rounded-2xl p-4 border border-white/10">
                 <h2 className="text-2xl font-bold text-stark flex items-center gap-2">
-                  <span className="text-3xl">🎯</span>
+                  <span className="text-3xl"></span>
                   Top Matches for Your Skills
                 </h2>
                 <span className="text-sm text-stark/60 bg-white/10 px-4 py-2 rounded-lg font-semibold">
